@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TP Chat Temps Réel</title>
+
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="chat-container">
+      <h1>Chat temps réel</h1>
+      <!-- sélection du destinataire mp ou tous -->
+      <div class="top-bar">
+        <label for="recipientSelect">Envoyer à :</label>
+        <select id="recipientSelect">
+          <option value="all">Tous</option>
+        </select>
+      </div>
+      
+      <!-- zone d'affichage des messages -->
+      <div id="messages-container">
+        <ul id="messages"></ul>
+      </div>
+
+      <!-- "l'utilisateur est en train d'écrire..." -->
+      <div id="typing-indicator"></div>
+
+      <!-- zone de saisie du message -->
+      <form id="chatForm">
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Tape ton message..."
+          autocomplete="off"
+        />
+        <button type="submit" id="sendBtn">➤</button>
+      </form>
+    </div>
+
+    <!-- script socket.io côté client -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+      const messagesContainer = document.getElementById("messages-container");
+      const messagesList = document.getElementById("messages");
+      const chatForm = document.getElementById("chatForm");
+      const messageInput = document.getElementById("messageInput");
+      const recipientSelect = document.getElementById("recipientSelect");
+      const typingIndicator = document.getElementById("typing-indicator");
+
+      const socket = io();
+
+      // demande du nom a l'utilisateur
+      let username = "";
+
+      while (!username) {
+        username = prompt("Choisis ton pseudo :");
+      }
+
+      // informe le serveur qu’un utilisateur a rejoint
+      socket.emit("user_connected", username);
+
+      // petit helper pour les messages système
+      function addMessageToList(text) {
+        const li = document.createElement("li");
+        li.textContent = text;
+        messagesList.appendChild(li);
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        messageInput.focus();
+      }
+
+      //submit du formulaire => envoi message
+      chatForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const message = messageInput.value.trim();
+        if (message === "") {
+          return;
+        }
+
+        const recipient = recipientSelect.value;
+
+        if (recipient === "all") {
+          //message normal pour tous 
+          socket.emit("chat message", {
+            user: username,
+            message: message,
+          });
+        } else {
+          //message privé
+          socket.emit("private_message", {
+            to: recipient,
+            from: username,
+            message: message,
+          });
+
+          //// on affiche aussi notre message privé côté client
+          const li = document.createElement("li");
+          const destinataire =
+            recipientSelect.selectedOptions[0].textContent;
+          li.textContent = `💌 à ${destinataire} : ${message}`;
+          li.classList.add("message-me");
+          messagesList.appendChild(li);
+
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        messageInput.value = "";
+        socket.emit("stop_typing");
+      });
+
+
+      function addSystemMessage(text) {
+        const li = document.createElement("li");
+        li.textContent = text;
+        li.classList.add("system-message");
+        messagesList.appendChild(li);
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+
+      //réception d'un message normal pour tous
+      socket.on("chat message", (data) => {
+        const li = document.createElement("li");
+        li.textContent = `${data.user} : ${data.message}`;
+
+        // style différent pour l'utilisateur / les autres
+        if (data.user === username) {
+          li.classList.add("message-me");
+        } else {
+          li.classList.add("message-other");
+        }
+
+        messagesList.appendChild(li);
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
+
+        // un utilisateur vient d'arriver
+      socket.on("user_connected", (user) => {
+        addSystemMessage(`❀ ${user} a rejoint le chat`);
+      });
+
+        // un utilisateur part
+      socket.on("user_disconnected", (user) => {
+        addSystemMessage(`𓇢𓆸 ${user} a quitté le chat`);
+      });
+
+         // mise à jour de la liste des utilisateurs pour les mp
+      socket.on("users_list", (users) => {
+        recipientSelect.innerHTML = "<option value=\"all\">Tous</option>";
+
+        Object.entries(users).forEach(([id, name]) => {
+          if (name !== username) {
+            const option = document.createElement("option");
+            option.value = id;
+            option.textContent = name;
+            recipientSelect.appendChild(option);
+          }
+        });
+      });
+
+      // mrécéption d'un messqage privé
+      socket.on("private_message", ({ from, message }) => {
+        const li = document.createElement("li");
+        li.textContent = `💌 de ${from} : ${message}`;
+        li.classList.add("message-other");
+        messagesList.appendChild(li);
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      });
+
+      // en train d'ecrire
+      messageInput.addEventListener("input", () => {
+        if (messageInput.value.trim() !== "") {
+          socket.emit("typing", username);
+        } else {
+          socket.emit("stop_typing");
+        }
+      });
+
+      
+      socket.on("typing", (user) => {
+        typingIndicator.textContent = `${user} est en train d'écrire...`;
+      });
+
+      socket.on("stop_typing", () => {
+        typingIndicator.textContent = "";
+      });
+    </script>
+  </body>
+</html>
