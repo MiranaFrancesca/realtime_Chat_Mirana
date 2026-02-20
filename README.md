@@ -1,40 +1,38 @@
-# Rick & Morty Explorer — React
+# Real-Time Chat Application — Node.js & Socket.io
 
-Application développée individuellement en React.
+Application développée individuellement avec Node.js, Express et Socket.io.
 
 ## Description
 
-Projet React utilisant React Router pour la navigation entre plusieurs pages et la Context API pour gérer et partager les données globales.
+Application de chat en temps réel permettant à plusieurs utilisateurs de communiquer instantanément via le navigateur.
 
-L’application consomme une API externe afin de récupérer des personnages et d’afficher un personnage sélectionné via un composant dédié.
+Le projet repose sur un serveur Express et une communication bidirectionnelle en temps réel grâce à Socket.io.
 
 ## Fonctionnalités
 
-- Minimum 2 pages avec leurs routes dédiées
-- Menu de navigation entre les pages
-- Utilisation de la Context API pour partager les données
-- Appel à une API externe pour récupérer des personnages
-- Stockage des données dans un state global
-- Stockage d’un personnage sélectionné dans un state
-- Affichage d’un personnage via un composant utilitaire
-
-## API utilisée
-
-https://api.sampleapis.com/rickandmorty/characters
+- Serveur web avec Express
+- Interface HTML statique servie depuis un dossier public
+- Communication en temps réel avec Socket.io
+- Envoi et réception instantanée de messages
+- Gestion des connexions et déconnexions des utilisateurs
+- Attribution d’un nom d’utilisateur
+- Affichage des messages au format : [NomUtilisateur] : Message
+- Messages de connexion / déconnexion
+- Indication "en train d’écrire..."
+- (Optionnel) Messages privés entre utilisateurs
 
 ## Technologies utilisées
 
-- React
-- React Router
-- Context API
-- Fetch / API REST
-- Bun
+- Node.js
+- Express
+- Socket.io
+- HTML
 - CSS
+- JavaScript
 
 ## Installation
 
-Avec Bun :
+1. Installer les dépendances :
 
 ```bash
-bun install
-bun run dev
+npm install
